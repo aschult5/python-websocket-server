@@ -334,10 +334,11 @@ class WebSocketHandler(StreamRequestHandler):
             payload_length = struct.unpack(">Q", self.rfile.read(8))[0]
 
         masks = self.read_bytes(4)
-        message_bytes = bytearray()
-        for message_byte in self.read_bytes(payload_length):
-            message_byte ^= masks[len(message_bytes) % 4]
-            message_bytes.append(message_byte)
+        raw_bytes = self.read_bytes(payload_length)
+        message_bytes = bytearray(len(raw_bytes))
+        for i, message_byte in enumerate(raw_bytes):
+            message_byte ^= masks[i & 3]
+            message_bytes[i] = message_byte
         opcode_handler(self, message_bytes.decode('utf8'))
 
     def send_message(self, message):
