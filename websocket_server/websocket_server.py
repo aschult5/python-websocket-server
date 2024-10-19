@@ -1,6 +1,7 @@
 # Author: Johan Hanssen Seferidis
 # License: MIT
 
+from itertools import cycle
 import sys
 import struct
 import ssl
@@ -334,11 +335,8 @@ class WebSocketHandler(StreamRequestHandler):
             payload_length = struct.unpack(">Q", self.rfile.read(8))[0]
 
         masks = self.read_bytes(4)
-        raw_bytes = self.read_bytes(payload_length)
-        message_bytes = bytearray(len(raw_bytes))
-        for i, message_byte in enumerate(raw_bytes):
-            message_byte ^= masks[i & 3]
-            message_bytes[i] = message_byte
+        payload = self.read_bytes(payload_length)
+        message_bytes = bytearray([byte ^ mask for byte, mask in zip(payload, cycle(masks))])
         opcode_handler(self, message_bytes.decode('utf8'))
 
     def send_message(self, message):
